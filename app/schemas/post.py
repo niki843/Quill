@@ -15,8 +15,4 @@ class BlogPostRead(BlogPostBase):
 class BlogPostTitleRead(BlogPostBase):
     id: int
     title: str
-
-
-class BlogPostCommentCount(BlogPostBase):
-    post_id: int
     comment_count: int

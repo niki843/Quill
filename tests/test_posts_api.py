@@ -33,13 +33,25 @@ async def test_list_posts_rejects_limit_over_100(client, seed_posts):
     assert "capped" in response.json()["detail"]
 
 
-async def test_list_post_titles_returns_id_and_title_only(client, seed_posts):
+async def test_list_post_titles_returns_id_title_and_comment_count(client, seed_posts):
     response = await client.get("/api/v1/posts/titles")
 
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 3
-    assert set(body[0].keys()) == {"id", "title"}
+    assert set(body[0].keys()) == {"id", "title", "comment_count"}
+
+
+async def test_list_post_titles_includes_comment_count_per_post(client, seed_comments, seed_posts):
+    post_with_comments = seed_posts[0]
+    post_without_comments = seed_posts[2]
+
+    response = await client.get("/api/v1/posts/titles")
+
+    assert response.status_code == 200
+    by_id = {post["id"]: post["comment_count"] for post in response.json()}
+    assert by_id[post_with_comments.id] == 2
+    assert by_id[post_without_comments.id] == 0
 
 
 async def test_list_post_titles_rejects_limit_over_100(client, seed_posts):
@@ -48,10 +60,10 @@ async def test_list_post_titles_rejects_limit_over_100(client, seed_posts):
     assert response.status_code == 400
 
 
-async def test_get_post_details_by_id(client, seed_posts):
+async def test_get_post_by_id(client, seed_posts):
     target = seed_posts[1]
 
-    response = await client.get("/api/v1/posts/details", params={"post_id": target.id})
+    response = await client.get(f"/api/v1/posts/{target.id}")
 
     assert response.status_code == 200
     body = response.json()
@@ -60,39 +72,14 @@ async def test_get_post_details_by_id(client, seed_posts):
     assert body[0]["title"] == "Second post"
 
 
-async def test_get_post_details_unknown_id_returns_empty_list(client, seed_posts):
-    response = await client.get("/api/v1/posts/details", params={"post_id": 999999})
+async def test_get_post_by_id_unknown_id_returns_empty_list(client, seed_posts):
+    response = await client.get("/api/v1/posts/999999")
 
     assert response.status_code == 200
     assert response.json() == []
 
 
-async def test_get_post_details_requires_post_id(client):
-    response = await client.get("/api/v1/posts/details")
+async def test_get_post_by_id_invalid_id_type_is_422(client):
+    response = await client.get("/api/v1/posts/not-a-number")
 
     assert response.status_code == 422
-
-
-async def test_comment_count_reflects_number_of_comments(client, seed_comments, seed_posts):
-    post_with_comments = seed_posts[0]
-
-    response = await client.get(f"/api/v1/posts/{post_with_comments.id}/comment-count")
-
-    assert response.status_code == 200
-    assert response.json() == {"post_id": post_with_comments.id, "comment_count": 2}
-
-
-async def test_comment_count_is_zero_for_post_without_comments(client, seed_posts):
-    post_without_comments = seed_posts[2]
-
-    response = await client.get(f"/api/v1/posts/{post_without_comments.id}/comment-count")
-
-    assert response.status_code == 200
-    assert response.json() == {"post_id": post_without_comments.id, "comment_count": 0}
-
-
-async def test_comment_count_for_nonexistent_post_is_zero_not_404(client):
-    response = await client.get("/api/v1/posts/999999/comment-count")
-
-    assert response.status_code == 200
-    assert response.json()["comment_count"] == 0

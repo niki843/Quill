@@ -1,10 +1,11 @@
 from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
 from app.schemas.comment import BlogCommentRead
-from app.schemas.post import BlogPostCommentCount, BlogPostRead, BlogPostTitleRead
+from app.schemas.post import BlogPostRead, BlogPostTitleRead
 
 
 class FakeOrmPost:
@@ -41,25 +42,16 @@ def test_blog_post_read_missing_field_raises():
         BlogPostRead(id=1, title="Title")
 
 
-def test_blog_post_title_read_ignores_extra_orm_attributes():
-    orm_post = FakeOrmPost(1, "Title", "Body", datetime(2024, 1, 1))
+def test_blog_post_title_read_from_row_like_object():
+    # BlogPostTitleRead is populated from a query result row (id, title, comment_count),
+    # not directly from a BlogPost ORM instance -- it has no body/published_on.
+    row = SimpleNamespace(id=1, title="Title", comment_count=3)
 
-    schema = BlogPostTitleRead.model_validate(orm_post)
+    schema = BlogPostTitleRead.model_validate(row)
 
     assert schema.id == 1
     assert schema.title == "Title"
-
-
-def test_blog_post_comment_count_from_plain_dict():
-    schema = BlogPostCommentCount.model_validate({"post_id": 1, "comment_count": 5})
-
-    assert schema.post_id == 1
-    assert schema.comment_count == 5
-
-
-def test_blog_post_comment_count_rejects_non_integer_count():
-    with pytest.raises(ValidationError):
-        BlogPostCommentCount(post_id=1, comment_count="many")
+    assert schema.comment_count == 3
 
 
 def test_blog_comment_read_from_orm_attributes():
