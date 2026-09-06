@@ -5,11 +5,19 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.core.cache import clear_all_caches
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.comment import BlogComment
 from app.models.post import BlogPost
+
+
+@pytest.fixture(autouse=True)
+def reset_caches():
+    clear_all_caches()
+    yield
+    clear_all_caches()
 
 
 @pytest.fixture
