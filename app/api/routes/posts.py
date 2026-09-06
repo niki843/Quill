@@ -12,8 +12,10 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 @router.get("/", response_model=List[BlogPostRead])
 async def list_posts(db: AsyncSession = Depends(get_db)):
-    return await db.scalars(select(BlogPost).order_by(BlogPost.id))
+    result = await db.scalars(select(BlogPost).order_by(BlogPost.id))
+    return result.all()
 
 @router.get("/titles", response_model=List[BlogPostTitleRead])
 async def list_post_titles(db: AsyncSession = Depends(get_db)):
-    return await db.execute(select(BlogPost.id, BlogPost.title).order_by(BlogPost.id))
+    result = await db.execute(select(BlogPost.id, BlogPost.title).order_by(BlogPost.id))
+    return result.all()

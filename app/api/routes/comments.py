@@ -12,4 +12,5 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 
 @router.get("/", response_model=List[BlogCommentRead])
 async def list_comments(db: Session = Depends(get_db)): 
-    return await db.scalars(select(BlogComment).order_by(BlogComment.id))
+    result = await db.scalars(select(BlogComment).order_by(BlogComment.id))
+    return result.all()
