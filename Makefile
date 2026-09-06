@@ -1,4 +1,4 @@
-.PHONY: build up down restart logs ps sh clean
+.PHONY: build up down restart logs ps sh clean test
 
 build:
 	docker compose build
@@ -22,3 +22,6 @@ sh:
 
 clean:
 	docker compose down -v
+
+test:
+	.venv/Scripts/python.exe -m pytest
